@@ -1,0 +1,25 @@
+{
+    "baseline": {
+        "rmse": 1.6892,
+        "mae": 1.0567,
+        "r2": 0.437
+    },
+    "best_model": {
+        "params": {
+            "layers_config": [
+                128,
+                64,
+                32,
+                16
+            ],
+            "dropout_rate": 0.2,
+            "learning_rate": 0.001,
+            "batch_size": 512
+        },
+        "test_metrics": {
+            "rmse": 1.549907755414163,
+            "mae": 0.8958266377449036,
+            "r2": 0.526028037071228
+        }
+    }
+}

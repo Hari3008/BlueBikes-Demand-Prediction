@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlueBikes Demand Forecasting</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+            color: #f1f5f9;
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        .dashboard { max-width: 1600px; margin: 0 auto; }
+
+        .header {
+            margin-bottom: 28px;
+            padding: 32px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 { font-size: 32px; font-weight: 700; color: #f1f5f9; margin-bottom: 8px; }
+        .header p { color: #94a3b8; font-size: 15px; }
+
+        .upload-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            margin-bottom: 24px;
+        }
+
+        .upload-title { font-size: 20px; font-weight: 600; color: #f1f5f9; margin-bottom: 8px; }
+        .upload-subtitle { color: #94a3b8; margin-bottom: 24px; font-size: 14px; }
+
+        .upload-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .upload-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            padding: 24px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .upload-box:hover {
+            background: rgba(59, 130, 246, 0.15);
+            border-color: #3b82f6;
+        }
+
+        .upload-box input { display: none; }
+        .upload-icon { font-size: 28px; margin-bottom: 10px; color: #60a5fa; }
+        .upload-label { font-size: 14px; font-weight: 600; color: #f1f5f9; margin-bottom: 6px; }
+        .upload-status { font-size: 12px; color: #94a3b8; margin-top: 6px; }
+        .upload-status.success { color: #34d399; font-weight: 600; }
+
+        .dashboard-content { display: none; }
+        .dashboard-content.active { display: block; }
+
+        .controls-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #94a3b8;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .control-group select {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            color: #f1f5f9;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .control-group select:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: #60a5fa;
+        }
+
+        .control-group select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        .impact-display {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(16, 185, 129, 0.15));
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .impact-label { font-size: 11px; color: #94a3b8; margin-bottom: 4px; text-transform: uppercase; }
+        .impact-value { font-size: 28px; font-weight: 700; color: #60a5fa; }
+        .impact-change { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+
+        .scenario-note {
+            margin-top: 16px;
+            padding: 12px 16px;
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.25);
+            border-radius: 8px;
+            font-size: 12px;
+            color: #cbd5e1;
+        }
+
+        .scenario-note strong { color: #f1f5f9; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-label { font-size: 12px; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-value { font-size: 36px; font-weight: 700; color: #f1f5f9; margin-bottom: 4px; }
+        .stat-subtitle { font-size: 13px; color: #64748b; }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 28px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .card-title { font-size: 18px; font-weight: 600; color: #f1f5f9; }
+
+        .badge {
+            padding: 5px 10px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-primary { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+        .badge-success { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
+
+        .chart-container { height: 400px; position: relative; }
+
+        .station-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .station-list::-webkit-scrollbar { width: 6px; }
+        .station-list::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 3px; }
+        .station-list::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 3px; }
+
+        .station-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 10px;
+            border-left: 4px solid #3b82f6;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .station-item:hover {
+            background: rgba(59, 130, 246, 0.15);
+            transform: translateX(4px);
+        }
+
+        .station-item.critical { border-left-color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+        .station-item.high { border-left-color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
+        .station-item.moderate { border-left-color: #10b981; background: rgba(16, 185, 129, 0.1); }
+
+        .station-name { font-size: 14px; font-weight: 600; color: #f1f5f9; margin-bottom: 6px; }
+
+        .station-details {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .station-demand { font-weight: 600; color: #60a5fa; }
+
+        .station-utilization {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 11px;
+        }
+
+        .utilization-low { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+        .utilization-moderate { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
+        .utilization-high { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+        .utilization-critical { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+
+        .heatmap-labels {
+            display: grid;
+            grid-template-columns: repeat(24, 1fr);
+            gap: 4px;
+            margin-bottom: 8px;
+            font-size: 11px;
+            color: #64748b;
+            text-align: center;
+        }
+
+        .heatmap-grid {
+            display: grid;
+            grid-template-columns: repeat(24, 1fr);
+            gap: 4px;
+        }
+
+        .heatmap-cell {
+            aspect-ratio: 1;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .heatmap-cell:hover { transform: scale(1.15); z-index: 10; }
+
+        .model-comparison {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .model-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 20px;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .model-card.active {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.12);
+        }
+
+        .model-card.best {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.12);
+        }
+
+        .model-card:hover { transform: translateY(-2px); }
+
+        .model-name { font-size: 16px; font-weight: 600; color: #f1f5f9; margin-bottom: 14px; }
+
+        .model-badge {
+            font-size: 9px;
+            padding: 3px 8px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-left: 8px;
+        }
+
+        .badge-best { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
+        .badge-active { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+
+        .metric-label { color: #94a3b8; }
+        .metric-value { font-weight: 700; color: #f1f5f9; }
+
+        .loading { text-align: center; padding: 60px; color: #94a3b8; }
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 1200px) {
+            .content-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>BlueBikes Demand Forecasting</h1>
+            <p>Machine learning-powered demand prediction for Metro Boston</p>
+        </div>
+
+        <div class="upload-section" id="uploadSection">
+            <div class="upload-title">Upload Data Files</div>
+            <p class="upload-subtitle">Upload predictions and metrics CSV files to begin</p>
+            
+            <div class="upload-grid">
+                <label class="upload-box">
+                    <div class="upload-icon">▦</div>
+                    <div class="upload-label">Predictions</div>
+                    <div class="upload-status" id="predictionsStatus">Click to upload</div>
+                    <input type="file" id="predictionsFile" accept=".csv">
+                </label>
+
+                <label class="upload-box">
+                    <div class="upload-icon">◈</div>
+                    <div class="upload-label">Model Metrics</div>
+                    <div class="upload-status" id="metricsStatus">Click to upload</div>
+                    <input type="file" id="metricsFile" accept=".csv">
+                </label>
+
+                <label class="upload-box">
+                    <div class="upload-icon">◉</div>
+                    <div class="upload-label">Stations (Optional)</div>
+                    <div class="upload-status" id="stationsStatus">Optional</div>
+                    <input type="file" id="stationsFile" accept=".csv">
+                </label>
+            </div>
+        </div>
+
+        <div class="dashboard-content" id="dashboardContent">
+            <div class="controls-panel">
+                <div class="controls-grid">
+                    <div class="control-group">
+                        <label>Weather</label>
+                        <select id="weatherSelect">
+                            <option value="1.0">Normal (1.0x)</option>
+                            <option value="1.2">Sunny (1.2x)</option>
+                            <option value="0.65">Light Rain (0.65x)</option>
+                            <option value="0.4">Heavy Rain (0.4x)</option>
+                            <option value="0.75">Cold (0.75x)</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Time Period</label>
+                        <select id="timeSelect">
+                            <option value="1.0">Standard (1.0x)</option>
+                            <option value="1.4">Rush Hour (1.4x)</option>
+                            <option value="1.15">Midday (1.15x)</option>
+                            <option value="0.5">Late Night (0.5x)</option>
+                            <option value="1.25">Weekend (1.25x)</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Model</label>
+                        <select id="modelSelect"></select>
+                    </div>
+
+                    <div class="impact-display">
+                        <div class="impact-label">Combined Impact</div>
+                        <div class="impact-value" id="impactValue">1.00x</div>
+                        <div class="impact-change" id="impactChange">(0% change)</div>
+                    </div>
+                </div>
+                
+                <div class="scenario-note">
+                    <strong>Note:</strong> Scenario multipliers are approximations for what-if analysis, not actual model re-runs.
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Stations</div>
+                    <div class="stat-value" id="totalStations">-</div>
+                    <div class="stat-subtitle">Metro Boston</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-label">Avg Demand</div>
+                    <div class="stat-value" id="avgDemand">-</div>
+                    <div class="stat-subtitle">Bikes/hour</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-label">Peak Demand</div>
+                    <div class="stat-value" id="peakDemand">-</div>
+                    <div class="stat-subtitle">Maximum</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-label">Accuracy (R²)</div>
+                    <div class="stat-value" id="modelAccuracy">-</div>
+                    <div class="stat-subtitle" id="modelAccuracyLabel">Current</div>
+                </div>
+            </div>
+
+            <div class="content-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">24-Hour Forecast</div>
+                        <span class="badge badge-primary" id="selectedModelBadge">Loading</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="demandChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Top Stations</div>
+                        <span class="badge badge-success">Live</span>
+                    </div>
+                    <div class="station-list" id="stationList">
+                        <div class="loading">
+                            <div class="loading-spinner"></div>
+                            <p>Loading...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Hourly Heatmap</div>
+                </div>
+                <div class="heatmap-labels" id="heatmapLabels"></div>
+                <div class="heatmap-grid" id="heatmapGrid"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Model Comparison</div>
+                </div>
+                <div class="model-comparison" id="modelComparison"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const state = {
+            predictionsData: null,
+            metricsData: null,
+            weatherMultiplier: 1.0,
+            timeMultiplier: 1.0,
+            selectedModel: null,
+            bestModel: null,
+            chart: null,
+            filesLoaded: { predictions: false, metrics: false, stations: false }
+        };
+
+        document.getElementById('predictionsFile').addEventListener('change', (e) => handleFileUpload(e, 'predictions'));
+        document.getElementById('metricsFile').addEventListener('change', (e) => handleFileUpload(e, 'metrics'));
+        document.getElementById('stationsFile').addEventListener('change', (e) => handleFileUpload(e, 'stations'));
+
+        function handleFileUpload(event, type) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const data = parseCSV(e.target.result);
+                
+                if (type === 'predictions') {
+                    state.predictionsData = data;
+                    state.filesLoaded.predictions = true;
+                    document.getElementById('predictionsStatus').textContent = `✓ ${data.length} rows`;
+                    document.getElementById('predictionsStatus').classList.add('success');
+                } else if (type === 'metrics') {
+                    state.metricsData = data;
+                    state.filesLoaded.metrics = true;
+                    document.getElementById('metricsStatus').textContent = `✓ ${data.length} models`;
+                    document.getElementById('metricsStatus').classList.add('success');
+                    determineBestModel();
+                } else if (type === 'stations') {
+                    state.stationsData = data;
+                    state.filesLoaded.stations = true;
+                    document.getElementById('stationsStatus').textContent = `✓ ${data.length} stations`;
+                    document.getElementById('stationsStatus').classList.add('success');
+                }
+                
+                checkDataReady();
+            };
+            
+            reader.readAsText(file);
+        }
+
+        function determineBestModel() {
+            if (!state.metricsData?.length) return;
+            
+            let bestMetric = state.metricsData[0];
+            state.metricsData.forEach(m => {
+                if (m.r2 > bestMetric.r2) bestMetric = m;
+            });
+            
+            state.bestModel = bestMetric.model.toLowerCase().replace(' ', '_');
+            state.selectedModel = state.bestModel;
+            
+            const select = document.getElementById('modelSelect');
+            select.innerHTML = '';
+            
+            [...state.metricsData].sort((a, b) => b.r2 - a.r2).forEach((m, i) => {
+                const key = m.model.toLowerCase().replace(' ', '_');
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = `${m.model}${i === 0 ? ' (Best - R²: ' + m.r2.toFixed(3) + ')' : ''}`;
+                if (key === state.selectedModel) option.selected = true;
+                select.appendChild(option);
+            });
+        }
+
+        function checkDataReady() {
+            if (state.filesLoaded.predictions && state.filesLoaded.metrics) {
+                document.getElementById('uploadSection').style.display = 'none';
+                document.getElementById('dashboardContent').style.display = 'block';
+                setupEventListeners();
+                renderDashboard();
+            }
+        }
+
+        function setupEventListeners() {
+            document.getElementById('weatherSelect').addEventListener('change', (e) => {
+                state.weatherMultiplier = parseFloat(e.target.value);
+                updateImpact();
+                renderDashboard();
+            });
+
+            document.getElementById('timeSelect').addEventListener('change', (e) => {
+                state.timeMultiplier = parseFloat(e.target.value);
+                updateImpact();
+                renderDashboard();
+            });
+
+            document.getElementById('modelSelect').addEventListener('change', (e) => {
+                state.selectedModel = e.target.value;
+                const name = e.target.value.replace('_', ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                document.getElementById('selectedModelBadge').textContent = name;
+                renderDashboard();
+            });
+        }
+
+        function parseCSV(text) {
+            const lines = text.split('\n').filter(l => l.trim());
+            const headers = lines[0].split(',').map(h => h.trim());
+            return lines.slice(1).map(line => {
+                const values = line.split(',');
+                const row = {};
+                headers.forEach((h, i) => {
+                    const v = values[i]?.trim();
+                    row[h] = isNaN(v) ? v : parseFloat(v);
+                });
+                return row;
+            });
+        }
+
+        function updateImpact() {
+            const combined = state.weatherMultiplier * state.timeMultiplier;
+            document.getElementById('impactValue').textContent = combined.toFixed(2) + 'x';
+            const change = Math.round((combined - 1) * 100);
+            document.getElementById('impactChange').textContent = `(${change > 0 ? '+' : ''}${change}% change)`;
+        }
+
+        function renderDashboard() {
+            updateStats();
+            updateDemandChart();
+            updateStationList();
+            updateHeatmap();
+            updateModelComparison();
+        }
+
+        function updateStats() {
+            if (!state.predictionsData) return;
+
+            const stations = [...new Set(state.predictionsData.map(d => d.station_id))];
+            document.getElementById('totalStations').textContent = stations.length;
+
+            const predCol = `${state.selectedModel}_prediction`;
+            const avgDemand = state.predictionsData.reduce((sum, d) => sum + (d[predCol] || 0), 0) / state.predictionsData.length;
+            document.getElementById('avgDemand').textContent = Math.round(avgDemand);
+
+            const peakDemand = Math.max(...state.predictionsData.map(d => d[predCol] || 0));
+            document.getElementById('peakDemand').textContent = Math.round(peakDemand);
+
+            const metric = state.metricsData?.find(m => m.model.toLowerCase().replace(' ', '_') === state.selectedModel);
+            document.getElementById('modelAccuracy').textContent = metric ? metric.r2.toFixed(3) : '-';
+            
+            const name = state.selectedModel?.replace('_', ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+            document.getElementById('modelAccuracyLabel').textContent = name || 'Current';
+        }
+
+        function updateDemandChart() {
+            if (!state.predictionsData) return;
+
+            const adj = state.weatherMultiplier * state.timeMultiplier;
+            const hourlyData = Array(24).fill(0).map((_, h) => {
+                const data = state.predictionsData.filter(d => d.hour === h);
+                const predCol = `${state.selectedModel}_prediction`;
+                return data.reduce((sum, d) => sum + (d[predCol] || 0), 0) / (data.length || 1) * adj;
+            });
+
+            const ctx = document.getElementById('demandChart');
+            if (state.chart) state.chart.destroy();
+
+            state.chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array(24).fill(0).map((_, i) => `${i}:00`),
+                    datasets: [{
+                        label: 'Demand',
+                        data: hourlyData,
+                        borderColor: '#60a5fa',
+                        backgroundColor: 'rgba(96, 165, 250, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: '#94a3b8' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        },
+                        x: {
+                            ticks: { color: '#94a3b8' },
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateStationList() {
+            if (!state.predictionsData) return;
+
+            const predCol = `${state.selectedModel}_prediction`;
+            const adj = state.weatherMultiplier * state.timeMultiplier;
+            
+            const stationAvg = {};
+            state.predictionsData.forEach(d => {
+                if (!stationAvg[d.station_id]) {
+                    stationAvg[d.station_id] = { id: d.station_id, name: d.start_station_name || `Station ${d.station_id}`, total: 0, count: 0 };
+                }
+                stationAvg[d.station_id].total += (d[predCol] || 0) * adj;
+                stationAvg[d.station_id].count++;
+            });
+
+            const stations = Object.values(stationAvg)
+                .map(s => ({ ...s, avgDemand: s.total / s.count, utilization: (s.total / s.count / 20) * 100 }))
+                .sort((a, b) => b.avgDemand - a.avgDemand)
+                .slice(0, 10);
+
+            document.getElementById('stationList').innerHTML = stations.map(s => {
+                const cls = s.utilization > 90 ? 'critical' : s.utilization > 70 ? 'high' : s.utilization > 50 ? 'moderate' : 'low';
+                return `
+                    <div class="station-item ${cls}">
+                        <div class="station-name">${s.name}</div>
+                        <div class="station-details">
+                            <span class="station-demand">${Math.round(s.avgDemand)} bikes/hr</span>
+                            <span class="station-utilization utilization-${cls}">${Math.round(s.utilization)}%</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateHeatmap() {
+            if (!state.predictionsData) return;
+
+            const predCol = `${state.selectedModel}_prediction`;
+            const adj = state.weatherMultiplier * state.timeMultiplier;
+            
+            const hourlyAvg = Array(24).fill(0).map((_, h) => {
+                const data = state.predictionsData.filter(d => d.hour === h);
+                return data.reduce((sum, d) => sum + (d[predCol] || 0), 0) / (data.length || 1) * adj;
+            });
+
+            const max = Math.max(...hourlyAvg);
+            
+            document.getElementById('heatmapLabels').innerHTML = Array(24).fill(0).map((_, i) => `<div>${i}</div>`).join('');
+
+            document.getElementById('heatmapGrid').innerHTML = hourlyAvg.map((v, h) => {
+                const intensity = v / max;
+                const color = intensity > 0.8 ? '#ef4444' : intensity > 0.6 ? '#f59e0b' : intensity > 0.4 ? '#10b981' : '#3b82f6';
+                return `<div class="heatmap-cell" style="background: ${color}; opacity: ${0.4 + intensity * 0.6}" title="Hour ${h}: ${Math.round(v)} bikes/hr">${Math.round(v)}</div>`;
+            }).join('');
+        }
+
+        function updateModelComparison() {
+            if (!state.metricsData) return;
+
+            document.getElementById('modelComparison').innerHTML = state.metricsData.map(m => {
+                const key = m.model.toLowerCase().replace(' ', '_');
+                const isActive = key === state.selectedModel;
+                const isBest = key === state.bestModel;
+                
+                let badge = '';
+                if (isBest && isActive) badge = '<span class="model-badge badge-best">Best & Active</span>';
+                else if (isBest) badge = '<span class="model-badge badge-best">Best</span>';
+                else if (isActive) badge = '<span class="model-badge badge-active">Active</span>';
+                
+                return `
+                    <div class="model-card ${isActive ? 'active' : ''} ${isBest ? 'best' : ''}">
+                        <div class="model-name">${m.model}${badge}</div>
+                        <div class="metric-row"><span class="metric-label">RMSE</span><span class="metric-value">${m.rmse.toFixed(3)}</span></div>
+                        <div class="metric-row"><span class="metric-label">MAE</span><span class="metric-value">${m.mae.toFixed(3)}</span></div>
+                        <div class="metric-row"><span class="metric-label">R²</span><span class="metric-value">${m.r2.toFixed(3)}</span></div>
+                        <div class="metric-row"><span class="metric-label">CV</span><span class="metric-value">${m.cv_score.toFixed(3)}</span></div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        updateImpact();
+    </script>
+</body>
+</html>

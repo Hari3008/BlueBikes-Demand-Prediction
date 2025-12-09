@@ -1,0 +1,11 @@
+{
+    "layers_config": [
+        128,
+        64,
+        32,
+        16
+    ],
+    "dropout_rate": 0.2,
+    "learning_rate": 0.001,
+    "batch_size": 512
+}
