@@ -22,6 +22,7 @@ Predict hourly bike rental demand at each BlueBikes station to optimize bike red
 | **Neural Network** | **1.550** | **0.896** | **0.526** |
 
 *Neural Network architecture: [128, 64, 32, 16] with 0.2 dropout*
+**All the output files are in the results folder including the config and weights files which are also included in drive link**
 
 ## Environment setup
 **conda env**
@@ -84,7 +85,6 @@ demand, weather_category, weather_severity_score, weather_clear, weather_heavy_r
 weather_hot, weather_rain, weather_windy
 
 ```
-**All the output files are in the results folder**
 
 ## 2. Pipeline Execution
 Execute the pipeline in order. Each step depends on the previous one.
@@ -433,3 +433,8 @@ Input(n_features) → [Hidden Layers with BatchNorm + ReLU + Dropout] → Output
 - `dnn_final_metrics.json` - Final performance metrics
 - `pytoch_dnn_complete_results.png` - Visualization plots
 ---
+
+
+## Acknowledgments
+- Kaggle for providing open trip data for Bluebikes
+- Open-Meteo for free weather API
