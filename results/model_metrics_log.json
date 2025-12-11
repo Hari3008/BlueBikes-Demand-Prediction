@@ -1,0 +1,77 @@
+{
+    "experiment_date": "2025-11-26 11:32:42",
+    "dataset_info": {
+        "total_samples": 798639,
+        "train_samples": 559047,
+        "validation_samples": 119796,
+        "test_samples": 119796,
+        "num_features": 38,
+        "date_range": "2020-01-01 00:00:00 to 2020-11-30 23:00:00"
+    },
+    "baseline_model": {
+        "description": "Linear Regression with Degree-2 Polynomial Features",
+        "parameters": {
+            "poly_degree": 2,
+            "ridge_alpha": 1.0
+        },
+        "metrics": {
+            "train": {
+                "rmse": 1.609238850288114,
+                "mae": 1.0128086805343628,
+                "r2": 0.5244967937469482
+            },
+            "validation": {
+                "rmse": 1.906675572652402,
+                "mae": 1.2717571258544922,
+                "r2": 0.5529842376708984
+            },
+            "test": {
+                "rmse": 1.633637434358449,
+                "mae": 1.108884572982788,
+                "r2": 0.47343456745147705
+            }
+        }
+    },
+    "optimized_model": {
+        "description": "Hyperparameter-tuned with GridSearchCV and TimeSeriesSplit",
+        "best_parameters": {
+            "poly__degree": 1,
+            "ridge__alpha": 0.01
+        },
+        "cv_best_score": 1.9500089089075725,
+        "metrics": {
+            "train_val": {
+                "rmse": 1.9340701970810001,
+                "mae": 1.277064323425293,
+                "r2": 0.3722214102745056
+            },
+            "test": {
+                "rmse": 1.7963013106352976,
+                "mae": 1.24880850315094,
+                "r2": 0.3633520007133484
+            }
+        }
+    },
+    "cv_details": {
+        "cv_strategy": "TimeSeriesSplit",
+        "n_splits": 3,
+        "param_grid": {
+            "poly__degree": [
+                1,
+                2
+            ],
+            "ridge__alpha": [
+                0.01,
+                0.1,
+                1.0,
+                10.0
+            ]
+        },
+        "total_fits": 8
+    },
+    "comparison": {
+        "test_rmse_improvement": "-9.96%",
+        "test_mae_improvement": "-12.62%",
+        "test_r2_improvement": "-23.25%"
+    }
+}

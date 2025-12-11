@@ -8,9 +8,9 @@
 **Local env**
 1. python -m venv venv(for virtual environment) then venv\Scripts\activate(windows) or source venv/bin/activate(macos/linux)
 
-### 1. Data
+## 1. Data
 **Drive_Link:** https://drive.google.com/drive/folders/1i4XQky2Q0RdkhUlO3_j2mjQkplYd44QB?usp=sharing
-#### Structure
+### Structure
 ```
 ├── Data/                          # Data directory (create this)
 │   ├── bluebikes_tripdata_2020.csv    # Raw trip data from kaggle
@@ -61,5 +61,136 @@ demand, weather_category, weather_severity_score, weather_clear, weather_heavy_r
 weather_hot, weather_rain, weather_windy
 
 ```
+**All the output files are in the results folder**
 
-### 2. Scripts
+## 2. Pipeline Execution
+Execute the pipeline in order. Each step depends on the previous one.
+
+
+### Step 1: Exploratory Data Analysis (Optional)
+
+```
+bash
+
+python eda.py
+
+```
+
+**What it does:**
+- Loads raw trip data
+- Analyzes demand patterns (hourly, daily, weekly)
+- Identifies top stations
+- Checks data quality
+**Output:**
+ Console analysis and recommendations
+---
+
+To get weather data
+```
+bash
+
+python get_wather_data.py
+```
+
+### Step 2: Feature Engineering
+
+```
+bash
+
+python feature_engineering.py
+
+```
+
+**What it does:**
+
+- Loads trip data and weather data
+- Creates 41+ engineered features:
+    - **Temporal**: Cyclical hour/day/month encodings, weekend/holiday flags
+    - **Spatial**: Station coordinates, neighborhood clusters, station type
+    - **Historical**: Lag features (t-1, t-24, t-168), rolling means/std
+    - **Weather**: Temperature, precipitation, severity scores
+    - **Demographic**: Subscriber ratio, age bracket, trip duration
+
+**Input files:**
+- `Data/bluebikes_tripdata_2020.csv`
+- `Data/boston_weather_2020.csv`
+
+**Output file:**
+- `Data/bluebikes_ml_ready.csv` (~800K records × 43 features)
+---
+
+
+### Step 3: Train Linear Regression Model
+
+```
+bash
+
+python linear_regression.py
+
+```
+
+**What it does:**
+- Loads ML-ready data (`bluebikes_ml_ready.csv`)
+- Excludes non-numeric columns automatically
+- Trains baseline model (degree-2 polynomial + Ridge, alpha=1.0)
+- Performs GridSearchCV with TimeSeriesSplit (3-fold)
+- Compares baseline vs optimized performance
+- Saves feature importance analysis
+
+**Configuration:**
+- Train/Val/Test split: 70/15/15 (temporal)
+- Polynomial degrees tested: [1, 2]
+- Ridge alpha values: [0.01, 0.1, 1.0, 10.0]
+- Cross-validation: 3-fold TimeSeriesSplit
+- Memory optimization: float32 casting
+
+**Output files:**
+- `baseline_lr_poly_model.pkl` - Baseline model
+- `optimized_lr_poly_model.pkl` - Tuned model
+- `model_metrics_log.json` - Comprehensive metrics
+- `feature_importance.csv` - Feature coefficients
+---
+
+### Step 4: Train Random Forest Model
+
+**Option A: Using Jupyter Notebook (Recommended for Colab)**
+
+```
+bash
+
+jupyter notebook ML_RandomForest.ipynb
+
+```
+
+Run all cells in order. The notebook includes feature engineering code, so it can run standalone.
+
+**Option B: Using Google Colab**
+
+1. Upload `ML_RandomForest.ipynb` to Colab
+2. Upload `bluebikes_tripdata_2020.csv` and `boston_weather_2020.csv` (or `bluebikes_ml_ready.csv`)
+3. Run all cells
+
+**What it does:**
+- Trains baseline Random Forest (n_estimators=100, max_depth=10)
+- Tests 3 optimized configurations manually
+- Uses 80/20 train/test split
+- Compares baseline vs optimized performance
+- Analyzes feature importance
+
+**Parameter Sets Tested:**
+
+```
+python
+
+param_sets = [   
+{'n_estimators':50, 'max_depth': 20,'min_samples_split': 10},
+{'n_estimators': 100, 'max_depth':15,'min_samples_split': 5},    
+{'n_estimators': 50,'max_depth':None,'min_samples_split': 10,'max_features':0.5}
+]
+
+```
+
+**Output files:**
+- `baseline_random_forest.pkl`
+- `optimized_random_forest.pkl`
+---
