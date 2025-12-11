@@ -511,12 +511,12 @@ class DNNHyperparameterTuner:
         
         param_grid = {
             'layers_config': [
-                [128, 64, 32, 16],
-                [256, 128, 64, 32],
+                [256, 128, 64],
+                [128, 64, 32, 16]
             ],
             'dropout_rate': [0.3, 0.2],
             'learning_rate': [0.001, 0.01],
-            'batch_size': [512]
+            'batch_size': [265, 512]
         }
         
 
