@@ -1,9 +1,25 @@
-# BlueBikes_Demand_Prediction
+# BlueBikes Demand Prediction
 
 ## Project Overview
 
 ### Objective
-Predict hourly bike rental demand at each BlueBikes station to optimize bike redistribution and ensure availability.
+
+Bike-sharing helps address last-mile mobility while supporting sustainable transport. BlueBikes’
+growth has intensified a core operational challenge: spatiotemporal imbalance, some stations
+face shortages while others hold surpluses. We target accurate short-term, station-level
+demand prediction to enable proactive redistribution and better capacity planning.
+
+We develop a regression-based model to forecast station-level BlueBikes demand in Metro
+Boston using 2020 trip data (~2M records). We implement and compare Linear Regression with
+polynomial expansion, Random Forest Regressor, and a Deep Neural Network (DNN). Features
+include temporal signals(cyclical encodings), spatial context (station coordinates/IDs), historical
+patterns (selected lags/rolling means), and external factors (hourly weather, holidays). The goal
+is short-term, actionable forecasts that support proactive rebalancing, improve availability, and
+enhance user experience. We evaluate with time-aware cross-validation using RMSE/MAE, and
+present a concise comparative analysis of models. We also outline a lightweight interactive
+dashboard prototype for visualizing predicted demand to aid operational planning.
+Introduction
+
 
 ### Approach
 1. **Data Collection**: BlueBikes 2020 trip data + Boston weather data
